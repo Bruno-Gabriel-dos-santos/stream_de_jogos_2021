@@ -1,0 +1,103 @@
+
+
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/types_c.h>
+#include "opencv2/imgproc.hpp"
+#include "opencv2/highgui.hpp"
+#include <Windows.h>
+#include <iostream>
+#include <string>
+
+
+using namespace std;
+using namespace cv;
+
+
+
+DWORD WINAPI ThreadFunc(void* data) {
+   // thread 1 :)
+    
+    return 0;
+}
+
+int main() {
+
+
+    char* lpPixels;
+    Mat src;
+	
+    // Get screen dimensions
+    int nScreenWidth = GetSystemMetrics(SM_CXSCREEN);
+    int nScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+    src.create(nScreenHeight, nScreenWidth, CV_8UC3);
+
+    BITMAPINFO MyBMInfo = { 0 };
+    MyBMInfo.bmiHeader.biSize = sizeof(MyBMInfo.bmiHeader);
+    MyBMInfo.bmiHeader.biWidth = nScreenWidth;
+    MyBMInfo.bmiHeader.biHeight = -nScreenHeight;
+    MyBMInfo.bmiHeader.biPlanes = 1;
+    MyBMInfo.bmiHeader.biBitCount = 24;
+    MyBMInfo.bmiHeader.biCompression = BI_RGB;
+    MyBMInfo.bmiHeader.biSizeImage = 0;
+    MyBMInfo.bmiHeader.biXPelsPerMeter = 0;
+    MyBMInfo.bmiHeader.biYPelsPerMeter = 0;
+    MyBMInfo.bmiHeader.biClrUsed = 0;
+    MyBMInfo.bmiHeader.biClrImportant = 0;
+
+    // Create compatible DC, create a compatible bitmap and copy the screen using BitBlt()
+    HDC hdcScreen = GetDC(0);
+
+    HDC hdcCompatible = CreateCompatibleDC(hdcScreen);
+    HBITMAP hBmp = CreateCompatibleBitmap(hdcScreen, nScreenWidth, nScreenHeight);
+    HGDIOBJ hOldBmp = (HGDIOBJ)SelectObject(hdcCompatible, hBmp);
+
+    BOOL bOK = BitBlt(hdcCompatible, 0, 0, nScreenWidth, nScreenHeight, hdcScreen, 0, 0, SRCCOPY | CAPTUREBLT);
+
+    SelectObject(hdcCompatible, hOldBmp); // always select the previously selected object once done
+    // Get the BITMAPINFO structure from the bitmap
+    GetDIBits(hdcScreen, hBmp, 0, 0, NULL, &MyBMInfo, DIB_RGB_COLORS);
+
+    // create the bitmap buffer
+    lpPixels = new char[MyBMInfo.bmiHeader.biSizeImage];
+
+    MyBMInfo.bmiHeader.biCompression = BI_RGB;
+    MyBMInfo.bmiHeader.biBitCount = 24;
+
+    // get the actual bitmap buffer
+    GetDIBits(hdcScreen, hBmp, 0, -MyBMInfo.bmiHeader.biHeight, (LPVOID)lpPixels, &MyBMInfo, DIB_RGB_COLORS);
+
+    int x = 1; int y = 2;
+    int a = 0;
+    int b = 0;
+
+
+
+ //   for (int i = 0u; i < 820000; ++i) {lpPixels[i] = 0;}  // b g r
+
+    SetDIBits(hdcScreen, hBmp, 0, -MyBMInfo.bmiHeader.biHeight, (LPVOID)lpPixels, &MyBMInfo, DIB_RGB_COLORS);
+    GetDIBits(hdcScreen, hBmp, 0, -MyBMInfo.bmiHeader.biHeight, (LPVOID)lpPixels, &MyBMInfo, DIB_RGB_COLORS);
+    GetDIBits(hdcScreen, hBmp, 0, -MyBMInfo.bmiHeader.biHeight, src.data, &MyBMInfo, DIB_RGB_COLORS);
+    // create windows 
+
+    //show window
+
+//      ShowWindow(hwnd, nCmdShow);
+//      UpdateWindow(hWnd);
+    namedWindow("output", WINDOW_NORMAL);
+
+    setWindowProperty("output", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+//    HANDLE thread = CreateThread(NULL, 0, ThreadFunc, NULL, 0, NULL);
+        imshow("output", src);
+        waitKey(10);
+    Sleep(10000);
+  //Clean Up
+    ReleaseDC(0, hdcScreen);
+    ReleaseDC(0, hdcCompatible);
+    DeleteDC(hdcCompatible);
+    DeleteDC(hdcScreen);
+    DeleteObject(hBmp);
+    DeleteObject(hOldBmp);
+
+    return 0;
+}
